@@ -1,0 +1,339 @@
+######
+#install.packages("H:\\迅雷下载\\ClusterGVis_0.1.1.tar.gz")
+library(patchwork)
+library(Seurat)
+#library(ClusterGVis)
+library(dplyr)
+library(Seurat)
+library(dplyr)
+library(Matrix)
+library(patchwork)
+library(monocle)
+library(tidyverse)
+library(ggplot2)
+library(viridis)
+library(RColorBrewer)
+library(ggsci)
+setwd("H:\\滋养层分析")
+#https://www.jianshu.com/p/66c387e1de3d
+goat<-readRDS("./Species_RDS/goat_annotation_celltype_processed.rds")
+#提取需要做拟时序分析的亚群
+tro=subset(goat,subset=celltype_lineage2%in%c("Trophoblast cells"))
+Idents(tro)<-tro$subclass2
+#tro<-readRDS("TP_C3_1_and_C4_4_TP_intergration_Tro.rds")
+DefaultAssay(tro)<-"RNA"
+DimPlot(tro,label = T,group.by="subclass2")
+#monocle2基于Seurat对象进行构建
+pd <- new('AnnotatedDataFrame', data = tro@meta.data)
+fd <- new('AnnotatedDataFrame', data = data.frame(gene_short_name = row.names(tro), row.names = row.names(tro)))
+data <- as(as.matrix(tro@assays$RNA@counts), 'sparseMatrix')
+cds <- newCellDataSet(data, phenoData = pd, featureData = fd, expressionFamily = negbinomial.size())
+#数据预处理
+## size factor：对细胞间mRNA的差异进行归一化，去除由于样本批次带来的影响（去批次效应）
+## dispersion：帮助我们以后进行差异表达分析
+#估计规模因素和离散度
+cds <- estimateSizeFactors(cds)
+cds <- estimateDispersions(cds)
+#save(cds,file = "goat_cds.rda")
+##计算每个基因在多少细胞中表达
+cds <- detectGenes(cds, min_expr = 0.1)
+print(head(fData(cds)))
+#保存数据集中至少10个细胞中表达的基因
+expressed_genes <- row.names(
+  subset(fData(cds), 
+         num_cells_expressed >= 10))
+# #过滤掉没有通过质量控制的细胞
+# valid_cells <- row.names(subset(pData(cds),
+#                                 num_genes_expressed > 15 &
+#                                   percent.mt > 45))
+# cds <- cds[,valid_cells]
+
+#**********************************************************
+######Step 1: 选择决定细胞进程的基因
+#**********************************************************
+#选择的用于排序的基因数目一般在2000左右比較合透 
+#gene数太多的话也可以top基因 
+#ordergene <- row.names (deg)[order(degSqval)][1:400]
+
+#**************************************************
+#2可选的基因选择方法
+#**************************************************
+if (F) {
+  ##除了比较推荐的上述寻找差异的基因的方法外，我们也可以选择其他三种方法：
+  ## 基于 seurat 方法，选择高变基因
+  express_genes <- VariableFeatures(tro)
+  cds <- setOrderingFilter(cds, express_genes)
+  plot_ordering_genes(cds)
+  ## 基于 seurat 中 FindAllMarkers 方法，选择亚型见差异表达的基因
+  deg.cluster <- FindAllMarkers(tro)
+  express_genes <- subset(deg.cluster, p_val_adj < 0.05)$gene
+  cds <- setOrderingFilter(cds, express_genes)
+  plot_ordering_genes(cds)
+  ## 基于 monocle 选择高可变基因
+  disp_table <- dispersionTable(cds)
+  disp.genes <- subset(disp_table, mean_expression >= 0.1 &
+                         dispersion_empirical >= 1*dispersion_fit)$gene_id
+  cds <- setOrderingFilter(cds, disp.genes)
+  plot_ordering_genes(cds)
+}
+#选择研究的生物学过程涉及到的基因集，这一步对于轨迹形状的影响很大
+#可以选择数据集中的高变基因，或者是在seurat中分析得到的marker基因列表
+#如果是时间序列数据，可以直接比较时间点选差异基因。总之选择的基因要含有尽可能多的信息
+#我这里直接用的各种亚群差异基因的集合
+#marker_gene=read.table("seurat_marker_gene.txt",header=T,sep="\t",stringsAsFactors=F)
+#cds_ordering_genes=unique(marker_gene$gene)
+#cds=setOrderingFilter(cds,ordering_genes = test_ordering_genes) 
+
+
+cds <- reduceDimension(cds, max_components = 2,
+                       method = 'DDRTree')
+
+#如果上一步报错Error in kmeans(t(Z), K, centers = centers) : initial centers are not distinct，则
+#cds <- reduceDimension(cds, max_components = 2,method = 'DDRTree',ncenter = 100)  设置ncenter
+
+colour=c("#20B2AA","#FFA500","#9370DB","#98FB98","#F08080","#1E90FF","#D2691E","#FFFF00",  
+         "#808000","#FF00FF","#FA8072","#7B68EE","#9400D3","#800080","#A0522D","#D2B48C","#D2691E","#87CEEB","#40E0D0","#5F9EA0",
+         "#FF1493","#0000CD","#008B8B","#FFE4B5","#8A2BE2","#228B22","#E9967A","#4682B4","#32CD32","#F0E68C","#FFFFE0","#EE82EE",
+         "#FF6347","#6A5ACD","#9932CC","#8B008B","#8B4513","#DEB887")
+#step 3：沿着时间轨迹，排序细胞
+##现在空间维度减小了，是时候使用orderCells函数对细胞进行排序了，如下所示。
+# 默认是使用上述计算的细胞状态进行排序（根是state 1）
+# 也可以使用 root_state 指定 根 节点
+cds <- orderCells(cds)
+# 如果上一步报错if(class(projection) != 'matrix')                 -> error
+#projection <- as.matrix(projection)
+# 原因
+# matrix构建的不对，代码如下
+# cds <- newCellDataSet(expr_matrix,
+#                       phenoData = pd,
+#                       featureData = fd,
+#                       lowerDetectionLimit = 0.1,
+#                       expressionFamily = VGAM::negbinomial.size())
+# 解决-没有尝试trace('project2MST', edit = T, where = asNamespace("monocle"))
+# 把matrix<-as.sparse(scRNAsub_nonMalignant@assays$RNA@counts)改成matrix<-as.sparse(scRNAsub_nonMalignant@assays$RNA@counts)后就好了。据说因为R版本的问题，函数的功能有些变动。
+
+#save(cds,file = "cds_goat_VariableFeatures.rda")
+
+plot_cell_trajectory(cds)+ scale_color_manual(values = colour)
+
+plot_cell_trajectory(cds,color_by = "subclass2",show_branch_points = T)+ scale_color_manual(values = colour)
+
+#使用root_state参数再次调用orderCells来指定起始点。
+cds <- orderCells(cds, root_state = '2') #如果报错 https://mp.weixin.qq.com/s/PkmUzXqR08aJqC0652_dkA
+#trace('project2MST', edit = T, where = asNamespace("monocle")) 删除if (class(projection) != "matrix") 
+plot_cell_trajectory(cds)+ scale_color_manual(values = colour)
+plot_cell_trajectory(cds, color_by = "Pseudotime") 
+#查看每个cluster位置
+plot_cell_trajectory(cds, color_by = "subclass2") + facet_wrap("~subclass2", nrow = 1)
+#
+
+p1=plot_cell_trajectory(cds,color_by = "subclass2",show_branch_points = T)+ scale_color_manual(values = colour)
+p2=plot_cell_trajectory(cds, color_by = "State") + scale_color_nejm()
+#colour=c("#DC143C","#0000FF","#20B2AA","#FFA500","#9370DB","#98FB98","#F08080")
+#p3=plot_cell_trajectory(cds, color_by = "Pseudotime") 
+data_df<-t(reducedDimS(cds)) %>% 
+  as.data.frame() %>%
+  select_('Component 1' = 1, 'Component 2' = 2) %>%
+  rownames_to_column("Cells") %>%mutate(pData(cds)$State,
+                                        pData(cds)$Pseudotime,
+                                        pData(cds)$sample,
+                                        pData(cds)$subclass2)
+
+colnames(data_df) <- c("cells","Component_1","Component_2","State",
+                       "Pseudotime","orig.ident","subclass2")
+reduced_dim_coords <- reducedDimK(cds)
+ca_space_df <- Matrix::t(reduced_dim_coords) %>% 
+  as.data.frame() %>% 
+  select_(prin_graph_dim_1 = 1, prin_graph_dim_2 = 2) %>% 
+  mutate(sample_name = rownames(.), sample_state = rownames(.)) 
+
+dp_mst <- minSpanningTree(cds)
+
+edge_df <- dp_mst %>% 
+  igraph::as_data_frame() %>%
+  select_(source = "from", target = "to") %>%
+  left_join(ca_space_df %>% select_(source="sample_name",source_prin_graph_dim_1="prin_graph_dim_1",source_prin_graph_dim_2="prin_graph_dim_2"), by = "source") %>%
+  left_join(ca_space_df %>% select_(target="sample_name",target_prin_graph_dim_1="prin_graph_dim_1", target_prin_graph_dim_2="prin_graph_dim_2"), by = "target")
+p3=ggplot() +geom_point(data = data_df, aes(x = Component_1, y = Component_2,color =Pseudotime)) +scale_color_viridis()+theme_bw()+
+  theme(panel.background = element_blank(),panel.border = element_blank(),panel.grid = element_blank(),axis.ticks.length = unit(0.8, "lines"),axis.ticks = element_blank(),axis.line = element_blank(),axis.title = element_text(size=15),)+
+  geom_segment(aes_string(x="source_prin_graph_dim_1",y="source_prin_graph_dim_2",xend="target_prin_graph_dim_1",yend="target_prin_graph_dim_2"),size=0.75, linetype="solid", na.rm=TRUE, data=edge_df)
+
+pdf("PE_plot_cell_trajectory.pdf",width=20,height=5)
+p1|p2|p3
+dev.off()
+
+#不太直观可以画树形图
+p1 <- plot_cell_trajectory(cds, x = 1, y = 2, color_by = "subclass2") + 
+  theme(legend.position='none',panel.border = element_blank())+
+  scale_color_manual(values = colour)#去掉第一个的legend  
+p2 <- plot_complex_cell_trajectory(cds, x = 1, y= 2, 
+                                     color_by = "subclass2")+ 
+  scale_color_manual(values = colour) + theme(legend.title = element_blank()) 
+
+pdf("PE_plot_cel.pdf",width=8.31,height=5)
+p1|p2
+dev.off()
+#可以画沿时间軸的胞密度图 
+library(ggpubr) 
+df <- pData(cds) 
+write.csv(df,"State_cell_density.csv")
+ClusterName_color_panel <- c("Dog_CTB"="#DC143C","Dog_EVT"="#20B2AA","Dog_STB"="#9370DB")
+
+#pData(cds)取出的是cds対象中cds@phenoData@data的内容 View(df) 
+ggplot(df, aes(x = Pseudotime, colour = subclass2, fill = subclass2)) +
+  geom_density(bw = 0.5, size = 1, alpha = 0.5) +
+  theme_classic2() +
+  scale_fill_manual(name = "", values = ClusterName_color_panel) +
+  scale_color_manual(name = "", values = ClusterName_color_panel)
+ggsave('State_cell_density.png')
+       
+####找差异基因
+#指找随拟时序变化的差异基因，以及不同state之间的差异基因。
+#这两个都是monocle里面的概念，与seurat里面找的差异基因不同。 
+#如果在做monocle2的时候，想展示这种差异基因，就需要做这一步。
+expressed_genes=row.names(subset(fData(cds),num_cells_expressed>=10)) #在部分基因里面找
+#diff_test_res <- differentialGeneTest(cds[expressed_genes,],fullModelFormulaStr = "~subclass2",cores=1)
+#ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
+#write.table(deg,file="goat_monocle.DEG.xls",col.names=T,row.names=F,sep="\t",quote=F)
+#ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
+######寻找拟时序差异基因绘制热图（qvalue体现基因与拟时序的密切程度）
+#这里是把排序基因(ordergene)提取出来做回分析,来找它们是否跟似时间有著的关系
+#如果不置,就会用所有基因来做它们与似时间的相关性 
+#************Pseudotime***************
+pseudotime_de <- differentialGeneTest(cds[expressed_genes,],cores = 1, 
+                                      fullModelFormulaStr = "~sm.ns(Pseudotime)")
+
+pseudotime_de <- pseudotime_de[order(pseudotime_de$qval), ]
+########**************state******************************
+states_de <- differentialGeneTest(cds[expressed_genes,],
+                                  fullModelFormulaStr = "~State")
+states_de <- states_de[order(states_de$qval), ]
+#
+pseudotime_de<- pseudotime_de[,c(5,2,3,4,1,6,7)]#把gene放前面,也可以不改 
+write.csv(pseudotime_de, "DOG_pseudotime_de.csv", row.names = T) 
+#write.table(pseudotime_de, file = "pseudotime_de.rds", quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+write.csv(states_de, "DOG_states_de.csv", row.names = T) 
+#********************可视化**********************************
+pseudotime_de <-pseudotime_de%>%pull(gene_short_name) %>% as.character() 
+#
+p=plot_pseudotime_heatmap(cds[pseudotime_de,], 
+                          num_clusters=4, 
+                          show_rownames=T, 
+                          return_heatmap=T) 
+ggsave("DOG_pseudotime_de.pdf", p, width = 5, height = 10)
+#画热图出现报错，<simpleError in checkwz(wz, M = M, trace = trace, wzepsilon = control$wzepsilon): NAs found in the working weights variable 'wz'>
+#Error in if (x@family@vfamily %in% c("negbinomial", "negbinomial.size")) { : 
+   # the condition has length > 1
+
+#trace('project2MST', edit = T, where = asNamespace("monocle"))
+#找到if （class（projection）!="matrix"）  删掉
+
+
+#前面通置num_clusters将熱图聚成了四个cluster,如想要把每个cluster的基因単独提出来做分析 
+p$tree_row 
+#Call: 
+# hclust(d = d, method = method) 
+# Cluster method : ward.D2 
+#Number of objects: 2829 
+clusters <- cutree(p$tree_row, k = 4) 
+clustering <- data.frame(clusters) 
+clustering[,1]<- as.character(clustering[,1]) 
+colnames(clustering)<- "Gene_Clusters" 
+table(clustering) 
+#1234 
+# 570 1031 506 722 
+write.csv(clustering, "DOG_pseudotime_de_clustering_all.csv", row.names = T)
+#拟时差异基因热图绘制（提取了前100个）
+Time_genes <-top_n(pseudotime_de,n=100,desc(qval))%>%pull(gene_short_name)%>%as.character()
+#Time_genes <- head(unique(pseudotime_de[order(pseudotime_de$qval, decreasing = FALSE),"gene_short_name"]), 100)
+p = plot_pseudotime_heatmap(cds[Time_genes,], num_clusters=4, show_rownames=T, return_heatmap=T)
+ggsave("Time_heatmapTop100.pdf", p, width = 5, height = 10)
+
+#显著差异基因按热图结果排序并保存
+hp.genes <- p$tree_row$labels[p$tree_row$order]
+Time_diff_sig <- Time_diff[hp.genes, c("gene_short_name", "pval", "qval")]
+write.csv(Time_diff_sig, "goat_Time_diff_sig.csv", row.names = F)
+
+#************************************************************
+#也可手动选择基因来绘制热图，查看其表达模式
+#************************************************************
+marker_genes <- row.names(subset(fData(cds), 
+                                 gene_short_name %in% c("MEF2C", "MEF2D", "MYF5",'ANPEP', "PDGFRA","MYOG")))
+
+diff_test_res <- differentialGeneTest(cds[marker_genes,], fullModelFormulaStr = "sm.ns(Pseudotime)") 
+sig_gene_names <- row.names(subset(diff_test_res, qval < 0.1)) 
+plot_pseudotime_heatmap(cds[sig_gene_names,], 
+                        num_clusters = 6, 
+                        cores = 1, 
+                        show_rownames = T)
+
+
+#************************************************************
+#**************单细胞轨迹的“分支”分析************************
+#************************************************************
+#上一步寻找拟时相关的基因是全局的,找拟时起点和终点相关的基因,这一步则是寻找和分叉点相关的基因。
+expressed_genes=row.names(subset(fData(cds),num_cells_expressed>=10)) 
+diff <- differentialGeneTest(cds[expressed_genes,],fullModelFormulaStr="~subclass2",cores=1) 
+#后面是表示対做差异分析的変量,理上可以为p_data的任意列名 
+head(diff) 
+##差异表达基因作为執迹构建的基因,差异基因的送准是qval<0.01,decreasing=F表示按数値増加排序 
+deg<- subset(diff, qval<0.01)#出2829个基因 
+deg <- deg[order(deg$qval,decreasing=F),] 
+head(deg) 
+#差异基因的結果文件保存 
+write.table(deg,file="train.monocle.DEG.xls",col.names=T,row.names=F,sep="t",quote=F) 
+#軌迹建基因可化 
+ordergene <- rownames(deg)
+
+#2
+
+BEAM_res=BEAM(cds[expressed_genes,],branch_point = 1,cores =2,progenitor_method = 'duplicate')
+#会返回每个基因的显著性，显著的基因就是那些随不同branch变化的基因
+BEAM_res <- BEAM_res[order(BEAM_res$qval),]
+BEAM_res=BEAM_res[,c("gene_short_name","pval","qval")]
+head(BEAM_res)
+write.csv(BEAM_res, "dog_BEAM_res.csv", row.names = F)
+
+tmp1=plot_genes_branched_heatmap(cds[row.names(subset(BEAM_res,qval<1e-4)),],
+                                 branch_point = 1,
+                                 num_clusters = 3, #这些基因被分成几个group
+                                 cores = 2,
+                                 branch_labels = c("Cell fate 1", "Cell fate 2"),
+                                 #hmcols = NULL, #默认值
+                                 hmcols = colorRampPalette(rev(brewer.pal(9, "PRGn")))(62),
+                                 branch_colors = c("#979797", "#F05662", "#7990C8"), #pre-branch, Cell fate 1, Cell fate 2分别用什么颜色
+                                 use_gene_short_name = F,
+                                 show_rownames = T,
+                                 return_heatmap = T #是否返回一些重要信息
+)
+ggsave("dog_BEAM_heatmap_all.pdf", tmp1$ph_res, width = 6.5, height = 10)
+hp.genes1 <- tmp1$ph_res$tree_row$labels[tmp1$ph_res$tree_row$order] 
+BEAM_sig1 <- BEAM_res[hp.genes1, c("gene_short_name", "pval", "qval")] 
+write.csv(BEAM_sig1, "dog_BEAM_sig.csv", row.names = T)
+#输出每个基因及其聚类信息
+annotation_row<-tmp1$annotation_row
+write.csv(annotation_row,"dog_BEAM_cluster.csv")
+#著差异基因(top100)按熱图結果排序并保存
+#送前100个基因可化 
+BEAM_genes2 <- head(unique(BEAM_res[order(BEAM_res$qval, decreasing = FALSE),"gene_short_name"]), 100)
+#BEAM_genes2 <-top_n(BEAM_res,n=100,desc(qval))%>%pull(gene_short_name)%>%as.character 
+p <- plot_genes_branched_heatmap(cds[BEAM_genes2,], branch_point = 1, 
+                                 num_clusters = 3, show_rownames = T, 
+                                 return_heatmap = T) 
+ggsave("dog_BEAM_heatmap_top100.pdf", p$ph_res, width = 6.5, height = 10)
+
+##如果要所有的差异基因,就把前面所632个基因的熱图存为p 
+hp.genes2 <- p$ph_res$tree_row$labels[p$ph_res$tree_row$order] 
+BEAM_sig2 <- BEAM_res[hp.genes2, c("gene_short_name", "pval", "qval")] 
+write.csv(BEAM_sig2, "human_BEAM_sig_100.csv", row.names = F)
+
+
+#选择上面热图中或显著差异基因中感兴趣的基因进行可视化
+head(BEAM_sig) 
+genes <- row.names(subset(fData(cds), 
+                          gene_short_name %in% c( "PEG10", "CEBPD", "TYROBP")))
+plot_genes_branched_pseudotime(cds[genes,], branch_point = 1, color_by = "State", ncol = 1)
+
+
+
+
