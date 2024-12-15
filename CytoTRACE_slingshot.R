@@ -30,7 +30,37 @@ set.seed(42)
 ## Read RDS
 ## ---------------------------------- #
 R <- readRDS("/home/pig/PIG_TR.rds")
-#include_celltype <- c("MyoFB_2", "MyoFB_1", "ASM") #提取构建轨迹的细胞亚群
+
+#================================================================================
+#1、CytoTRACE分析推断细胞分化起点
+#================================================================================
+#CytoTRACE分析,输入用单细胞count矩阵，
+exp1 <- as.matrix(R @assays$RNA@counts)
+exp1 <- exp1[apply(exp1 > 0,1,sum) >= 5,]#筛选一下，表达量太低的也没什么意义，也是缩小数据
+#分析很简单，CytoTRACE函数一句话,CytoTRACE函数可多线程
+#如果你的数据比较大，那么分析很慢，建议开多线程
+results <- CytoTRACE(exp1,ncores = 1)
+
+#meta数据,用于可视化
+phenot <- R $cell_type
+phenot <- as.character(phenot)
+names(phenot) <- rownames(R@meta.data)
+emb <- R@reductions[["umap"]]@cell.embeddings
+#plotCytoTRACE函数可视化结果，outputDir设置为当然文件夹，可视化结果就会保存在相应文件夹
+plotCytoTRACE(results, phenotype = phenot, emb = emb, outputDir = './')
+plotCytoGenes(results, numOfGenes = 30, outputDir = './')#可视化基因
+
+#它也会返回一个每个细胞评分的data，我们可以将这个数据读入作图
+cyto <- read.table("CytoTRACE_plot_table.txt");head(cyto)
+cutoff <- quantile(cyto$CytoTRACE, 0.75)
+cyto$diff <- "low"
+cyto[cyto$CytoTRACE > cutoff, ]$diff <- "high"
+ggplot(cyto, aes(Component1, Component2, color = diff)) +
+  geom_point(size = 1.5, alpha = 1.0)
+
+
+
+
 R$cell_type <- Idents(R) %>% as.character()
 R_ALL <- R
 
@@ -48,27 +78,6 @@ umap_colors <- c("UNC1" = "#DC050C",
                  "UNC4" = "#7BAFDE",
                  "UNC5" = "#882E72",
                  "UNC6" = "#B17BA6")
-
-# real_colors <- c("ASM" = "#33A02C",
-#                  "MyoFB_1" = "#B2DF8A",
-#                  "MyoFB_2" = "#55A1B1",
-#                  "LipoFB_1" = "#8DD3C7",
-#                  "LipoFB_2" = "#A6761D",
-#                  "MatrixFB" = "#E6AB02",
-#                  "VSM" = "#7570B3",
-#                  "Pericyte" = "#BEAED4",
-#                  "Progenitor" = "#666666",
-#                  "Mensothelial" = "#999999") 
-# umap_colors <- c("ASM" = "#DC050C",
-#                  "MyoFB_1" = "#FB8072",
-#                  "MyoFB_2" = "#1965B0",
-#                  "LipoFB_1" = "#7BAFDE",
-#                  "LipoFB_2" = "#882E72",
-#                  "MatrixFB" = "#B17BA6",
-#                  "VSM" = "#FF7F00",
-#                  "Pericyte" = "#FDB462",
-#                  "Progenitor" = "#E7298A",
-#                  "Mensothelial" = "#E78AC3")
 
 
 ## Subset 细胞亚群
