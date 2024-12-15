@@ -14,7 +14,7 @@ dim(cow)
 count <- cow@assays$RNA@counts
 dim(count)
 #转换为human的同源基因
-common_one2one<-read.csv("/home/tanguanghui/11-placenta_RNA/04-caoxuesha/01.test_Homologous_ten_species/start_csv/ten_common_genes.csv")
+common_one2one<-read.csv("/home/11-placenta_RNA/start_csv/ten_common_genes.csv")
 head(common_one2one)
 one2one<-common_one2one[, c("cow_gene", "human_gene")]
 #取表达矩阵与one2one物种相同的基因
