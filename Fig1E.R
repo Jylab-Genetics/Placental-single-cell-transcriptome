@@ -1,204 +1,349 @@
-#Marker gene heatmap(Fig1E)
-#all marker(Contains top genes)
-library(ggplot2)
-library("viridis")
+merge$celltype_merge <- factor(x = merge$celltype_merge,
+                               levels = c("CTB(human)",
+                                          "EVT(human)",
+                                          "STB(human)",
+                                          "Stro(human)",
+                                          "Endo(human)",
+                                          "Mac(human)",
+                                          "DC(human)",
+                                          "Tcell(human)",
+                                          "CTB(macaca)",
+                                          "EVT(macaca)",
+                                          "STB(macaca)",
+                                          "Stro(macaca)",
+                                          "Endo(macaca)",
+                                          "Mac(macaca)",
+                                          "NKcells(macaca)",
+                                          "Tcells(macaca)",
+                                          "CTB(guinea pig)",
+                                          "EVT(guinea pig)",
+                                          "STB(guinea pig)",
+                                          "Stro(guinea pig)",
+                                          "Endo(guinea pig)",
+                                          "Epi(guinea pig)",
+                                          "Mono(guinea pig)",
+                                          "Mac(guinea pig)",
+                                          
+                                          "Invasive(rat)",
+                                          "Stro(rat)",
+                                          "Endo(rat)",
+                                          "Epi(rat)",
+                                          "Mac(rat)",
+                                          "Tcells(rat)",
+                                          "NKcells(rat)",
+                                          "Bcells(rat)",
+                                          
+                                          "SpT(mouse)",
+                                          "GC(mouse)",
+                                          "S-TGC(mouse)",
+                                          "SynTI(mouse)",
+                                          "SynTII(mouse)",
+                                          "Stro(mouse)",
+                                          "Endo(mouse)",
+                                          "Mac(mouse)",
+                                          "NKcells(mouse)",
+                                          "Tcells(mouse)",
+                                          
+                                          "CTB(rabbit)",
+                                          "EVT(rabbit)",
+                                          "STB(rabbit)",
+                                          "Stro(rabbit)",
+                                          "Endo(rabbit)",
+                                          "Epi(rabbit)",
+                                          "Mac(rabbit)",
+                                          
+                                          "UNC1(pig)",
+                                          "UNC2(pig)",
+                                          "UNC3(pig)",
+                                          "UNC4(pig)",
+                                          "UNC5(pig)",
+                                          "Stro(pig)",
+                                          "Endo(pig)",
+                                          "Epi(pig)",
+                                          "Mac(pig)",
+                                         
+                                          "UNC1(cow)",
+                                          "UNC2(cow)",
+                                          "UNC3(cow)",
+                                          "UNC4(cow)",
+                                          "BNC1(cow)",
+                                          "BNC2(cow)",
+                                          "BNC3(cow)",
+                                          "Stro(cow)",
+                                          "Endo(cow)",
+                                          'Epi(cow)',
+                                          "Mac(cow)",
+                                          "Leu(cow)",
+                                          "Neu(cow)",
+                                         
+                                          "UNC1(goat)",
+                                          "UNC2(goat)",
+                                          "BNC1(goat)",
+                                          "BNC2(goat)",
+                                          "BNC3(goat)",
+                                          "Stro(goat)",
+                                          "Endo(goat)",
+                                          "Epi(goat)",
+                                          "Mac(goat)",
+                                          "Neu(goat)",
+                                          
+                                          
+                                          "CTB(dog)",
+                                          "EVT(dog)",
+                                          "STB(dog)",
+                                          "Stro(dog)",
+                                          "Endo(dog)",
+                                          "Epi(dog)",
+                                          "Mac(dog)",
+                                          "Tcells(dog)"))
+DimPlot(merge,group.by="celltype_merge",reduction="tsne",theme_use = "theme_blank",pt.size=0.02,pt.alpha=0.5,raster=FALSE)
 
 markers <- c(
-  # 第一部分
-  "EGFR", "ITGB6", "PARP1", "KRT18", "XAGE3", "SMAGP", "ADIRF", "MIR205HG", "VGLL1", "CDO1", 
-  "FXYD3", "ISYNA1", "LDHB", "SMS", "EFEMP1", "HLA-G", "PAPPA", "TAC3", "AOC1", "PRG2", 
-  "EBI3", "QSOX1", "HPGD", "CSH1", "PLAC8", "HTRA1", "ISM2", "CGA", "CYP19A1", "INSL4", 
-  "ERVW-1", "ERVV-1", "HOPX", "HSPB8", "PRKCZ", "FAR2", "CSF3R", "SLC13A4", "ADHFE1", "TACC2", 
-  "LGALS13", "GCM1", "CLDN3", "CKB", "C1QBP", "TGM2", "UCHL1", "TYMS", "STMN1", "H2AFX", 
-  "CKS1B", "KIAA0101", "TBL1X", "RANBP1", "BMP7", "DNMT1", "LAIR2", "ITGA5", "TNFSF10", 
-  "CX3CL1", "HS3ST1", "DEFB1", "CD59", "SRI", "MFAP2", "ISM2", "GJA1", "SERPINB6", "MFAP5", 
-  # 第二部分
-  "PSG7", "CSHL1", "PSG3", "GDF15", "PSG4", "CSH2", "LGALS14", "CRYAB", "HPGD", "UBE2A", 
-  "PLAC1", "GH1", "PLAC2", "CDH1", "MKI67", "KRT8","LGALS2", "LIFR", "HSPA8", "TAF1D", "TRRAP", "STK26", "ADGRG6", "TFPI", "MMP11",  
-  "KRT7", "PRLRP2", "LEP", "NOTUM", "CTNNB1", "LOC106027897", "FST", "LOC100724235", "LOC100725464", 
-  "GPM6A", "UTRN", "DDX3X", "TBX3", "LAMA1", "TEAD3", "GATA3", "LAMA5", "SAT1", "PLCB4", 
-  "KCNMA1", "TSC22D1", "FAP", "NEB", "DST", "ALDH1A2", "SORBS2", "PRL7B1", "PRL5A1", "PRL4A1", 
-  "PRL2A1", "PRL5A2", "PRL2C1",  "MMP15", "TPBPA", "GALNT6", "PRL7B1", "PRL2C1", 
-  "LOC684107", "HSD17B2", "C1QTNF6", "NCAM1", "PLAC8", "TIAM2", "RORA", "NUAK1", "GNA14", 
-  "ALDH1A3", "TIAM1", "TCF4", "ALDH1A3", "ANO6", "PHACTR1", "OLR1", "RGS12", "LEPR", "NOS1AP", 
-  # 第三部分
-  "CTSQ", "PODXL", "APBA1", "PRKCE", "ST3GAL4", "CTDSPL", "CDH23", "PDE10A", "PRKCH", "GLIS1", 
-  "STRA6", "ROR2", "LGR5", "DAB1", "CASKIN1", "PLEKHA6", "KANK1", "TACC2", "IQGAP2", "SNAP91", 
-  "PRL8A9", "MITF", "SLCO2A1", "1700025G04RIK", "ST6GAL1", "CEACAM14", "ARHGAP39", "MGAT4A", 
-  "CEACAM5", "SRGAP1", "GM42418", "MICAL3", "TNFRSF9", "FLT1", "GATA3", "LGALS3", "GATA2", 
-  "LOC100358868", "SRD5A2", "RALGPS2", "MAP9", "JMJD1C", "PTPRK", "PLAU", "LOC103348889", 
-  "MMP2", "MMP14", "DIO2", "SERPINE1", "HSPG2", "RAC1", "NGFR", "FBLN2", "GJD4", "IL21R", 
-  "SEMA7A", "NTRK1", "CRISPLD2", "LRP8", "TFRC", "DUSP9", "TP63", "ANGPT4", "TFEC", "SAT1", 
-  # 第四部分
-  "GRB10", "LOC108178888", "FOXRED1", "LOC100346323", "SNAP91", "STON2", "PHF8", "FAM13A", 
-  "PLET1", "PPAG3", "PAG6", "ERBB3", "PLBD1", "LOC110260671", "LOC110259250", "LOC100524786", 
-  "LOC100524130", "SOX5", "LRP2", "SMPDL3A", "DAB2", "LGMN", "EPB41L3", "DEFB1", "LOC100511891", 
-  "CTSD", "PAPSS2", "CHST8", "SLC45A3", "CHST3", "ST3GAL5", "PECR", "ST3GAL3", "FGL2", "SLC15A1", 
-  "PAG10", "PAG3", "PRP3", "PAG5", "PAG4", "PAG16", "PRP8", "PAG20", "PAG15", "PAG18", "PRP6", 
-  "PRP14", "PRP1", "PRP4", "PRP3", "PAG2", "PAG8", "TEAD1", "LOC101907852", "LOC112448071", 
-  "B4GALNT3", "LOC508098", "PLEKHD1", "CTNND2", "HSD3B1", "CYP11A1", "PHLDA2", "RAI14", "PAG6", 
-  "CITED1", "PAG-6", "TGFBI", "CPXM1", "FIBIN", "ANGPTL2", "PPAG3", "GATM", "LGALS16", "LGALS15", 
-  "PAGE4", "PAG-8", "ERV3-1", "PEG3", "LOC102171766", "LOC102177258", "GULP1", "CCL17", "SRSF7", 
-  "FMR1", "TFAP2A", "PEG10", "CCNE1", "ITGA6", "KRT19", "LOC477365", "LOC102153162", "LOC611209", 
-  "PAPPA2", "ADM", "SERPINE2", "MMP1", "MMP12", "ANGPT2", "C35H6orf62", "ESM1", "VASN", "OLR1", 
-  "RAB27B", "LOC482182", "RRAS2", "MFSD2A", "PTHLH", "CAR1", "SMPD1", "CEMIP", "JAG2", "LDLR", 
-  "GPT2", "PGF", "EGFR", "INHBA", "NPPC", "PECAM1", "VWF", "EGFL7", "KDR", "CD93", "FCGR2B", 
-  "RAMP2", "PLVAP", "LDB2", "COL3A1", "COL1A1", "LUM", "COL1A2", "DCN", "COL15A1", "CLU", "POSTN", 
-  "PINLYP", "GUCA2B", "OXT", "MUC1", "EPCAM", "MUC4", "CDH16", "PDPN", "CTSL", "C1QC", "LYVE1", 
-  "CTSC", "CD68", "CXCL14", "CD52", "CD83", "CD86", "GZMA", "CD69", "CD52", "CD3G", "PTPRC", 
-  "CD3E", "TBXAS1", "ITGA2B", "CD226", "PRKCQ", "CD163", "CD14", "CD209", "C1QA", "C1QB", "AIF1", 
-  "MRC1", "NKG7", "CD3D", "GZMA", "GZMB", "GZMK", "TMEM163", "RUNX3", "DOCK2", "DOCK10", "DSCAM", 
-  "FAM178B", "FYB", "S100A9", "S100A8", "IFIT1BL", "G0S2", "IL1B", "LRG1", "LYZ2", "CCL6", 
-  "CENPF", "TOP2A", "SMC4", "HMGB2", "CTSC", "B2M", "SPP1"
-)
+  "PEG10", "PRDX5", "XAGE3", "SMAGP", "ADIRF", "MIR205HG", "VGLL1", "CDO1", "FXYD3", "ISYNA1",
+  "LDHB", "SMS", "EFEMP1", "HLA-G", "PAPPA", "TAC3", "AOC1", "PRG2", "EBI3", "QSOX1",
+  "HPGD", "CSH1", "PLAC8", "HTRA1", "ISM2", "CGA", "CYP19A1", "INSL4", "ERVW-1", "ERVV-1",
+  "HOPX", "HSPB8", "PRKCZ", "FAR2", "CSF3R", "SLC13A4", "ADHFE1", "TACC2", "LGALS13", "GCM1",
+  "CLDN3", "CKB", "C1QBP", "TGM2", "UCHL1", "TYMS", "STMN1", "H2AFX", "CKS1B", "KIAA0101",
+  "TBL1X", "RANBP1", "BMP7", "DNMT1", "LAIR2", "ITGA5", "TNFSF10", "CX3CL1", "HS3ST1", "DEFB1",
+  "CD59", "SRI", "MFAP2", "ISM2", "GJA1", "SERPINB6", "MFAP5", "PSG7", "CSHL1", "PSG3",
+  "GDF15", "PSG4", "CSH2", "LGALS14", "CRYAB", "HPGD", "UBE2A", "PLAC1", "GH1", "PLAC2",
+  "MKI67", "KRT8", "CDH1","TAF1D", "TRRAP", "LGALS2", "PHLDA2", "YBX1", "MIF", "TPX2", "PARP1",
+  "LEP", "RPS19", "RPS3A", "RPS7", "MMP11", "PHLDB2", "TSPAN5", "GPM6A", "FST", "NOTUM",
+  "VEGFA", "PRLRP2", "LIFR", "TPK1", "EPB41L1", "VEGFA", "NXPE2", "TBX3", "TFAP2C", "LAMA1",
+  "TEAD3", "GATA3", "TSC22D1", "FAP", "NEB", "KCNMA1", "ATL1", "ALDH1A2", "PLCB4", "ERGIC1",
+  "TFPI", "LAMA5", "PRL7B1", "PRL5A1", "PRL4A1", "PRL2A1", "PRL5A2", "PRL2C1","MMP15",
+  "TPBPA", "GALNT6", "PRL7B1", "PRL2C1", "LOC684107", "HSD17B2", "C1QTNF6", "NCAM1", "PLAC8",
+  "TIAM2", "RORA", "NUAK1", "GNA14", "ALDH1A3", "TIAM1", "TCF4", "ALDH1A3", "ANO6", "PHACTR1",
+  "OLR1", "RGS12", "LEPR", "NOS1AP", "CTSQ", "PODXL", "APBA1", "PRKCE", "ST3GAL4", "CTDSPL",
+  "CDH23", "PDE10A", "PRKCH", "GLIS1", "DAB1", "CASKIN1", "PLEKHA6", "STRA6", "KANK1", "TACC2",
+  "IQGAP2", "SNAP91", "RBM20", "RALGPS1", "MPP7", "ARL15", "PSMD9", "TGFA", "ROR2",  
+  "ZNRF3", "CMSS1", "TACO1", "GM47283", "PRL8A9", "MITF", "SLCO2A1",
+  "1700025G04RIK", "ST6GAL1", "CEACAM14", "ARHGAP39", "MGAT4A", "CEACAM5", "SRGAP1", "GM42418",
+  "MICAL3", "TNFRSF9", "GATA2", "CD9", "GRHL1", "PTHLH", "ELF3", "TFAP2A", "TGFB1", "PLAU",
+  "WSB1", "RALGPS2", "ANXA1", "MMP2", "MMP14", "DIO2", "EFNB1", "SERPINE1", "HSPG2", "RAC1",
+  "VCAN", "TWSG1", "AQP3", "ADA", "FBLN2", "ALDH1A3", "GJA1", "LRP8", "TFRC", "DUSP9", "TP63",
+  "SRSF7", "SAT1", "RLN1", "CLK1", "RESF1", "SRSF2", "RSRP1", "PJA1", "ZRANB2", "AKR1B10", "LGALS1",
+  "FLT1", "ANO4", "TCF7L2", "SOX5", "GRN", "PLET1",
+  "PLBD1", "CITED1", "C1QTNF4",  "FOLR1",
+  "CTBS", "PPAG3", "FOLR1", "PAG6", "CITED1",
+  "DAB2", "LRP2", "KRT7",
+  "CHST8", "PAPSS2", "CHST3", "ST3GAL3", "SLC45A3", "ST3GAL5", "SLC15A1",
+  "PAG10", "PAG3",
+  "PRP3", "PAG5", "PAG4", "PAG16", "PRP8", "PAG20", "PAG15", "PAG18", "PRP14", "PRP1", "PRP4", "PRP3",
+  "PAG2", "PAG8", "TEAD1", "LOC101907852", "LOC112448071", "B4GALNT3", "LOC508098", "PLEKHD1",
+  "CTNND2", "HSD3B1", "CYP11A1", "RAI14", "PAG-3", "PAG-11", "PRP6", "PRP1", "PAG-6", "ADA", "ANGPT1",
+  "WIPF1", "GULP1", "PEG3", "CYP19A1", "PAG-8", "ERV3-1", "PAGE4", "CCL17", 
+  "SOLD1", "FGD4", "EPS8", "ARL15", "ECI2", "ITGB6", "ITGA6", "KRT19", "CCNE1", "RBFOX1", "GPM6A",
+  "FMR1", "AGMAT", "WSB1", "LAMA1", "PAPPA2", "MMP12", "CITED2", "ADM", "ARAP2", "EXT1", "ST14",
+  "NPY", "NPC1", "FHDC1", "RRAS2", "LUZP1", "PPP2R2B", "MFSD2A", "PTHLH", "CAR1", "EGFR", "JAG2",
+  "ADAM18", "PGF", "SFRP2", "NPPC", "LRP2", "TFPI2", "SCD", "CEMIP", "PECAM1", "VWF", "EGFL7", "KDR",
+  "FCGR2B", "RAMP2", "PLVAP", "LDB2", "COL3A1", "COL1A1", "LUM", "COL1A2", "DCN", "COL15A1",
+  "CLU", "POSTN", "COL1A1", "COL1A2", "COL3A1", "COL6A1", "COL6A3", 'MMRN2','WDR72',"GUCA2B",  "MUC1",
+  "EPCAM",'WFDC2', "MUC4", "CDH16", "PDPN", "CTSL", "C1QC", "LYVE1", "CTSC", "CD68", "CXCL14", "CD52", "CD83",
+  "CD86", "GZMA", "CD69", "CD52", "CD3G", "CXCL8", "CD4", "PTPRC", "CD3E", "TBXAS1", "ITGA2B", "CD226",
+  "PRKCQ",'CXCL8','CD4', "CD163", 'CD74','RBPJ',"CD14", "CD209", "C1QA", "C1QB", "AIF1", "MRC1", "NKG7", "CD3D", "GZMA", "GZMB",
+  "GZMK", "TMEM163", "RUNX3", "DOCK2", "DOCK10", "DSCAM", "FAM178B", "FYB",  "IFIT1BL",
+  "G0S2", "IL1B", "LRG1", "LYZ2", "CCL6", "CENPF", "TOP2A", "SMC4", "HMGB2", "CTSC", "B2M", "SPP1",
+  "S100A8",  "S100A9", "S100A12","CXCL8", "CXCL2")
 
-markers1 <- as.data.frame(markers)
-markerdata <- ScaleData(tro, features = as.character(unique(markers1$markers)), assay = "RNA")
+
+
+
+
+markers <- as.data.frame(markers)
+markerdata <- ScaleData(merge, features = as.character(unique(markers$markers)), assay = "RNA")
+
+
+
 
 markerdata$celltype_merge <- factor(x=markerdata$celltype_merge,
-                                    levels = c("Cytotrophoblast(human)","Extravillous_trophoblast(human)","Syncytiotrophoblast(human)", "CTB(macaca)", "EVT(macaca)", 'STB(macaca)',
-                                               "CTB(gp)", "EVT(gp)",'STB(gp)',"Invasive(rat)","GC(mouse)", "S-TGC(mouse)","SynT(mouse)",'SpT(mouse)',
-                                               "CTB(rabbit)", "EVT(rabbit)", "STB(rabbit)","pUNC1", "pUNC2","pUNC3", "pUNC4", "pUNC5",
-                                               "BNC1(cow)", "BNC2(cow)", "BNC3(cow)","UNC1(cow)", "UNC2(cow)", "UNC3(cow)", "UNC4(cow)",
-                                               "BNC1(goat)", "BNC2(goat)", "BNC3(goat)", "BNC4(goat)", "BNC5(goat)", "BNC6(goat)","UNC(goat)",
+                                    levels = c("CTB(human)","EVT(human)","STB(human)", "CTB(macaca)", "EVT(macaca)", 'STB(macaca)',
+                                               "CTB(guinea pig)", "EVT(guinea pig)",'STB(guinea pig)',"Invasive(rat)","GC(mouse)", "S-TGC(mouse)","SynTI(mouse)","SynTII(mouse)",'SpT(mouse)',
+                                               "CTB(rabbit)", "EVT(rabbit)", "STB(rabbit)", "UNC1(pig)", "UNC2(pig)","UNC3(pig)","UNC4(pig)", "UNC5(pig)","BNC1(cow)", "BNC2(cow)", "BNC3(cow)","UNC1(cow)", "UNC2(cow)", "UNC3(cow)", "UNC4(cow)",
+                                               "BNC1(goat)","BNC2(goat)", "BNC3(goat)","UNC1(goat)", "UNC2(goat)",
                                                "CTB(dog)", "EVT(dog)", "STB(dog)", 
-                                               "Endothelial_cell(human)", "Endo(macaca)","Endo(gp)",  "Endo(rat)",'Endo(mouse)',"Endo(rabbit)","Endo(pig)",  "Endo(cow)","Endo(goat)","Endo(dog)",
-                                               "Stromal_cell(human)",'Stro(macaca)', 'Stro(gp)',"Stro(rat)","Stro(mouse)","Mes(mouse)", "Stro(rabbit)","Stro(pig)", "Stro(cow)", "Stro(goat)","Stro(dog)",
-                                               'Epi(rat)','Epi(rabbit)','Epi(pig)','Epi(cow)','Epi(goat)','Epi(dog)',
-                                               "Dendritic_cell(human)","T_cell(human)","Tcells(macaca)","Tcells(rat)",'Tcells(mouse)',
-                                               'Macrophage(Hofbauer cell)(human)',"Mac(macaca)", "Mac(gp)", "Mac(rat)",'Mac(mouse)',"Mac(rabbit)",'Mac(goat)','Mac(cow)',"Mac(dog)",
-                                               "NKcells(macaca)", "NKcells(rat)", "NKcells(mouse)",
-                                               "Bcells(rat)", 'Neu(goat)'))
+                                               "Endo(human)", "Endo(macaca)","Endo(guinea pig)","Endo(rat)",'Endo(mouse)',"Endo(rabbit)","Endo(pig)",  "Endo(cow)","Endo(goat)","Endo(dog)",
+                                               "Stro(human)",'Stro(macaca)', 'Stro(guinea pig)',"Stro(rat)","Stro(mouse)", "Stro(rabbit)","Stro(pig)", "Stro(cow)", "Stro(goat)","Stro(dog)",
+                                               "Epi(guinea pig)",'Epi(rat)','Epi(rabbit)','Epi(pig)','Epi(cow)','Epi(goat)','Epi(dog)',
+                                               "DC(human)","Tcell(human)","Tcells(macaca)","Tcells(rat)",'Tcells(mouse)',"Tcells(dog)",
+                                               'Mac(human)',"Mac(macaca)", "Mono(guinea pig)", "Mac(guinea pig)", "Mac(rat)",'Mac(mouse)',"Mac(rabbit)","Mac(pig)",'Mac(cow)','Mac(goat)',"Mac(dog)",
+                                               "NKcells(macaca)", "NKcells(rat)", "NKcells(mouse)", "Bcells(rat)", "Neu(cow)",'Neu(goat)',"Leu(cow)"))
 
 
-cols <- viridis(100)[c(20, 50, 100)]
-pdf(file = "heatmap_output_FINAL.pdf", width = 10, height =25)  # Adjust width and height as needed
+
+
+
+library(ggplot2)
+
+
+
+
+library("viridis")
+cols <- viridis(100)[c(30, 50, 100)]
+cols
+#[1] "#355E8DFF" "#218F8DFF" "#FDE725FF"
+# Open a PDF device
+pdf(file = "heatmap_output_FINAL3.pdf", width = 15, height =20)  # Adjust width and height as needed
 
 # Generate the heatmap and save it to the PDF
 DoHeatmap(markerdata,
-          features = as.character(unique(markers1$markers)),
+          features = as.character(unique(markers$markers)),
           group.by = "celltype_merge",
           assay = 'RNA',draw.lines = FALSE,
-          group.colors = c("#a6cee3","#94c2dc","#82b7d6","#257cb2",'#398aac','#4c97a7',
-                           '#a5d981','#95d074','#84c868','#42a737','#eebc6a','#fdbb68','#fdb259','#fdaa4b',
-                           '#fe8524','#fd8838','#fd8c4c','#f16464','#ed5354','#ea4344','#e73233','#e42123',
-                           '#dd3841','#da4c59','#d76072','#d4748a','#d088a3','#cd9cbb','#cab0d3',
-                           '#8c66af','#7f57a7','#73489f','#6f4399','#825d99','#967699','#a99099',
-                           '#eedb80','#e4c571','#d9af63',
-                           '#5fa0ca','#5fa5a1','#74c05c','#35a02c', '#fe992e','#fc9060','#f78685','#bea4ce','#bda999','#cf9a54', #Endo
-                           '#4d95c4','#72b29c','#63b84f','#4fa435','#fda23c','#fb9374','#f47575', '#b294c7','#f7f599','#bb6e36', #Stro
-                           '#6aa83e','#fb9788','#e12429','#a585bf','#b15928','#d6bcc0','#b15928',#Epi
-                           '#70acd0','#3b8abe','#99cd91','#d4b861','#fe8002',#T
-                           '#2a7fb7','#acdb8b','#52af43','#9fb04f','#fe8110','#fa9696','#9876b7','#bb7784','#f8f18f','#c58445',#,mac
-                           '#86c096','#b9b458','#b9b458','#84ac47','#d0c299' )) +
+          group.colors = c('#a4c7db','#93bad4','#85afce',
+                           '#2f6fa7','#3a7ca4','#49889f',
+                           '#a9d486','#99cd7b','#8ac670',
+                           '#39993a','#f0b362','#efaa56','#f0a34b','#ef9b40','#f1bb6f',
+                           '#ec8434','#ec8842','#ed8a51',
+                           '#e88684','#e57675','#e16967','#dd5b5a','#da4e4d',
+                           '#c787a1','#c69ab7','#c5add0','#cc464c','#cb5460','#c96475','#c7758a',
+                           '#785291','#8b6992','#9c8295','#704796','#673a8f',
+                           '#eae488','#e0d07b','#d7bc6d',
+                           '#6599c0','#68a499','#6cb65a','#5fa03e','#ed8d2f','#ed8f71','#d43433','#ac8ebe','#c1b396','#c49454',
+                           '#75a3c6','#57969c','#7bbe65','#4a9b37','#ee9535','#ed8d60','#d74141','#b89dc6','#af9a96','#cea961',
+                           '#5eae4f','#78a547','#ee9381','#d12d29','#a080b6','#d2ca96','#ba8047',
+                           '#4983b2','#3979ac','#96ca8b','#a8ad55','#eb8229','#a65a2f',
+                           '#558eb9','#76b193','#4ca644','#409f3a','#90a94e','#ec8726','#ee9794','#ce3739','#9371ae','#e3e095','#af6c3b',
+                           '#88be8f','#c0b25e','#eb7e21','#d8b665','#7c569e','#f2f499','#8863a5')) +
   scale_fill_gradientn(colors = c("#355E8DFF", "#218F8DFF", "#FDE725FF"))+theme(
     legend.position = "none")
 #
-
 
 # Close the PDF device
 dev.off()
 
 
-##########heatmap或者ComplexHeatmap做图。
-data<-GetAssayData(markerdata,slot="scale.data")
-#整理亚群注释信息
-celltype_info<-sort(markerdata$celltype_merge)
-table(celltype_info)
-
-celltype_info<-factor(celltype_info,levels=c("Cytotrophoblast(human)","Extravillous_trophoblast(human)","Syncytiotrophoblast(human)", "CTB(macaca)", "EVT(macaca)", 'STB(macaca)',
-                                             "CTB(gp)", "EVT(gp)",'STB(gp)',"Invasive(rat)","GC(mouse)", "S-TGC(mouse)","SynT(mouse)",'SpT(mouse)',
-                                             "CTB(rabbit)", "EVT(rabbit)", "STB(rabbit)","pUNC1", "pUNC2","pUNC3", "pUNC4", "pUNC5",
-                                             "BNC1(cow)", "BNC2(cow)", "BNC3(cow)","UNC1(cow)", "UNC2(cow)", "UNC3(cow)", "UNC4(cow)",
-                                             "BNC1(goat)", "BNC2(goat)", "BNC3(goat)", "BNC4(goat)", "BNC5(goat)", "BNC6(goat)","UNC(goat)",
-                                             "CTB(dog)", "EVT(dog)", "STB(dog)", 
-                                             "Endothelial_cell(human)", "Endo(macaca)","Endo(gp)",  "Endo(rat)",'Endo(mouse)',"Endo(rabbit)","Endo(pig)",  "Endo(cow)","Endo(goat)","Endo(dog)",
-                                             "Stromal_cell(human)",'Stro(macaca)', 'Stro(gp)',"Stro(rat)","Stro(mouse)","Mes(mouse)", "Stro(rabbit)","Stro(pig)", "Stro(cow)", "Stro(goat)","Stro(dog)",
-                                             'Epi(rat)','Epi(rabbit)','Epi(pig)','Epi(cow)','Epi(goat)','Epi(dog)',
-                                             "Dendritic_cell(human)","T_cell(human)","Tcells(macaca)","Tcells(rat)",'Tcells(mouse)',
-                                             'Macrophage(Hofbauer cell)(human)',"Mac(macaca)", "Mac(gp)", "Mac(rat)",'Mac(mouse)',"Mac(rabbit)",'Mac(goat)','Mac(cow)',"Mac(dog)",
-                                             "NKcells(macaca)", "NKcells(rat)", "NKcells(mouse)",
-                                             "Bcells(rat)", 'Neu(goat)'))
-
-#将data中由变量g指定和行和celltype_info中的细胞类型对应的列转换为一个矩阵，并存储在mat变量中
-mat<-as.matrix(data[markers,names(celltype_info)])
 
 
-#设置列标签的颜色
-#将列标签的col设置为和umap一样的配色，并且与亚群的数量统一起来
-#使用HeatmapAnnotation整理需要添加的列标签信息
-#在Heatmap中使用top_annotation添加上美化后的列标签信息
-#设置列标签颜色，并整理top_anno标签注释信息
-col<-c("#a6cee3","#94c2dc","#82b7d6","#257cb2",'#398aac','#4c97a7',
-       '#a5d981','#95d074','#84c868','#42a737','#eebc6a','#fdbb68','#fdb259','#fdaa4b',
-       '#fe8524','#fd8838','#fd8c4c','#f16464','#ed5354','#ea4344','#e73233','#e42123',
-       '#dd3841','#da4c59','#d76072','#d4748a','#d088a3','#cd9cbb','#cab0d3',
-       '#8c66af','#7f57a7','#73489f','#6f4399','#825d99','#967699','#a99099',
-       '#eedb80','#e4c571','#d9af63',
-       '#5fa0ca','#5fa5a1','#74c05c','#35a02c', '#fe992e','#fc9060','#f78685','#bea4ce','#bda999','#cf9a54', #Endo
-       '#4d95c4','#72b29c','#63b84f','#4fa435','#fda23c','#fb9374','#f47575', '#b294c7','#f7f599','#bb6e36', #Stro
-       '#6aa83e','#fb9788','#e12429','#a585bf','#b15928','#d6bcc0','#b15928',#Epi
-       '#70acd0','#3b8abe','#99cd91','#d4b861','#fe8002',#T
-       '#2a7fb7','#acdb8b','#52af43','#9fb04f','#fe8110','#fa9696','#9876b7','#bb7784','#f8f18f','#c58445',#,mac
-       '#86c096','#b9b458','#b9b458','#84ac47','#d0c299' )
 
-names(col)<-levels(celltype_info)
-
-
-top_anno<-HeatmapAnnotation(
-  cluster=anno_block(gp=gpar(fill=col),#设置填充色
-                       labels=levels(celltype_info),
-                       labels_gp=gpar(cex=0.5,col="white")))#设置字体
-
-#只展示特定基因
-
+#Heatmap
 gene <- c(
-  'EGFR', 'PARP1', 'HLA-G', 'PAPPA', 'CGA', 'INSL4', 'ERVV-1', 'GCM1',
-  'C1QBP', 'LAIR2', 'ITGA5', 'PSG7', 'PSG3', 'CSH2', 'CDH1', 'MKI67',
-  'KRT8', 'MMP11', 'LGALS2', 'PRLRP2', 'NOTUM', 'TBX3', 'TEAD3', 'GATA3',
-  'PRL7B1', 'PRL2A1', 'NCAM1', 'PLAC8', 'NOS1AP', 'PODXL', 'STRA6', 'ROR2',
-  'PRL8A9', 'MITF', 'FLT1', 'LGALS3', 'GATA2', 'DIO2', 'RAC1', 'TFRC', 'TP63',
-  'PLET1', 'PAG6', 'LRP2', 'PAG3', 'PAG4', 'PAG2', 'PAG8', 'PAG6', 'CITED1',
-  'GATM', 'LGALS16', 'LGALS15', 'PAGE4', 'PAG-8', 'ERV3-1', 'TFAP2A', 'PEG10',
-  'PAPPA2', 'SERPINE2', 'MFSD2A', 'PTHLH', 'CAR1', 'PECAM1', 'VWF', 'COL1A1',
-  'LUM', 'DCN', 'MUC1', 'EPCAM', 'CD52', 'CD83', 'GZMA', 'PTPRC', 'CD163',
-  'MRC1', 'NKG7', 'GZMB', 'S100A9', 'S100A8', 'LRG1', 'CENPF', 'SPP1'
+  "CDH1","TP63", "FLT1", "ANO4", "TCF7L2", "SOX5","FOLR1", "GRN", "PLET1", "PLBD1", "CITED1",
+  "FOLR1", "CTBS",  "PPAG3",  "PAG6", "CITED1",
+  "DAB2", "LRP2", "KRT7","ITGB6", "PPARG", "STRA6", "CHST8", "SGK1", "TFAP2C", "GATA2","GATA3","YBX3","CITED2",
+  "CHST3", "ST3GAL3", "SLC45A3",
+  "ST3GAL5", "SLC15A1", "SLC15A1", "SLC16A10", "SLC1A3", "SLC20A1", "SLC22A3",
+  "SLC22A5", "SLC23A2", "SLC25A21", "SLC25A3", "SLC25A3", "SLC25A6", "SLC25A6",
+  "SLC2A2", "SLC2A2", "SLC39A11", "SLC40A1", "SLC45A3", "SLC4A7", "SLC7A4",
+  "SLC7A8", "SLC7A8", "SLC9A3", "SOX5", "CTNNA1",  "DAB2"
+  
 )
 
-# 找到 gene 列表中不在 mat_scaled 行名中的基因
-missing_genes <- gene[!gene %in% rownames(mat)]
+#计算平均表达量
+gene_cell_exp <- AverageExpression(asthma,
+                                   features = unique(gene),
+                                   group.by = 'celltype_rep',
+                                   slot = 'data') 
+gene_cell_exp <- as.data.frame(gene_cell_exp$RNA)
 
-gene_pos<-which(rownames(mat)%in%gene)
+#complexheatmap作图
+library(ComplexHeatmap)
+#顶部细胞类型注释
+df <- data.frame(colnames(gene_cell_exp))
+colnames(df) <- 'class'
 
-row_anno<-rowAnnotation(gene=anno_mark(at=gene_pos,labels=gene))
 
 
+top_anno = HeatmapAnnotation(df = df,#细胞名/cluster
+                             border = T,
+                             show_annotation_name = F,
+                             gp = gpar(col = 'black'),
+                             col = list(class = c('UNC5'="#9ECABE",
+                                                  'UNC4'="#F6F5B4",
+                                                  'UNC3'="#2F528F",
+                                                  "UNC2"="#E3AD68",
+                                                  "UNC1"="#ACD45E")))#颜色设置
+#数据标准化缩放一下
+marker_exp <- t(scale(t(gene_cell_exp),scale = T,center = T))
+# 打开 PDF 设备并设置文件名和尺寸
+pdf(file = "/home/hkli/database/TGH_analyse/Cow_dev_placenta/PIG_REP2/PIG_TR_monocle/monocle2/pig_gene_Heatmap.pdf", width = 3.43, height = 7)  # 根据需要调整宽度和高度
 
-
-pdf(file = "heatmap_output_fixed.pdf", width = 15, height = 25)
-
-# 绘制热图并保存
-draw(
-  Heatmap(
-    mat,
-    name = "Expression",
-    row_order = 1:nrow(mat),
-    col = colorRamp2(c(-1, 0, 2), c("#355E8DFF", "#218F8DFF", "#FDE725FF")),
-    cluster_rows = FALSE,
-    cluster_columns = FALSE,
-    show_column_names = FALSE,
-    show_row_names = FALSE,
-    border = FALSE,  # 去除边框，避免间隔线
-    row_names_gp = gpar(fontface = 'italic', fontsize = 4),
-   column_split = celltype_info,
-   top_annotation = top_anno,  # 热图上边增加注释
-    right_annotation = row_anno,
-    column_gap = unit(0, "mm"),  # 移除列之间的间隔
-  )
-)
-
-# 关闭 PDF 设备
+# 绘制热图
+Heatmap(marker_exp,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        show_column_names = FALSE,
+        show_row_names = TRUE,
+        column_title = NULL,
+        heatmap_legend_param = list(title = ""),
+        col = colorRampPalette(c("#355E8DFF", "#218F8DFF", "#FDE725FF"))(100),
+        border = 'black',
+        rect_gp = gpar(col = "black", lwd = 0.5),
+        row_names_gp = gpar(fontsize = 10),
+        column_names_gp = gpar(fontsize = 10),
+        column_order = c("UNC1", "UNC2", "UNC3", "UNC4", "UNC5"), # 设置列顺序
+        top_annotation = top_anno)
 dev.off()
 
-# 提示完成保存
-cat("Heatmap has been saved to 'heatmap_output_fixed.pdf'\n")
+
+
+
+
+
+#DotPlot
+genes <- c(
+  "MITF", "TEAD1", "GATA3", "TP63", "PEG10", "TCF7L2", "GATA2", "TFAP2A",
+  "PAG-8", "ERV3-1", "PHLDA2", "PEG3", "PAGE4", "CDH1", "PAG-2", "KRT7", "CTNNB1",
+  "PLET1", "PLBD1", "PAG6", "PPAG3",
+  "TFPI", "PAG-3", "PAG-11", "PRP6", "PRP1", "PAG-6",
+  "PAG-3", "PAG-6", "PRP6",
+  "CDH18", "GPC6", "CDH12", "FSTL5",
+  "KDR", "PECAM1", "VWF",
+  "GATM", "SERPINE2", "LGALS15",
+  "EPCAM", "KRT18", "WFDC2",
+  "TGFBI", "CPXM1", "ANGPTL2",
+  "WFDC1", "COL3A1", "ACTA2",
+  "CENPF", "CKAP2", "TOP2A"
+)
+
+goat$celltype_harmony <- factor(x = goat$celltype_harmony,
+                               levels = c(
+                                 "UNC1", "UNC2", "BNC1", "BNC2", "BNC3", 
+                                 "Endo1", "Endo2", "GECs", "LECs", "Stro", 
+                                 "SMC", "Neu","Mac"
+                               ))
+
+
+DotPlot(goat,features = unique(genes),group.by="celltype_harmony")+RotatedAxis()+
+  scale_x_discrete("")+scale_y_discrete("")+
+  scale_color_gradientn(colours = rev(c("#FFD92F","#FEE391",brewer.pal(11, "Spectral")[7:11])))+
+  theme_bw()+
+  theme(axis.text.x.bottom = element_text(hjust = 1, vjust = 1, angle = 45))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
