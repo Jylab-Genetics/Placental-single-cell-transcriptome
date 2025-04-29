@@ -1,0 +1,188 @@
+
+##########################获得表达矩阵，消除文库影响
+#基因偏向性
+setwd("./02.output/Invasive_trophoblast")
+#human vs macaca
+human<-readRDS("./human_Invasive/human_Invasive_tro_down1800.RDS")
+h= as.matrix(GetAssayData(human, slot="counts"))
+h<-edgeR::cpm(h)
+
+macaca<-readRDS("./macaca_Invasive/macaca_Invasive_tro.RDS")
+macaca <- subset(macaca,downsample = 1800)
+ma= as.matrix(GetAssayData(macaca, slot="counts"))
+ma<-edgeR::cpm(ma)
+
+#根据并集基因构建
+union_of_rownames <- union(rownames(h), rownames(ma))
+
+# #根据自定义基因集合
+# TF<-read.csv("Discoid_placenta_one2oneTF.csv",header=T)
+# nrowH<-TF$OvelapHumanTF
+# nrowM<-TF$macaca
+# 创建新的数据框，列数为样本数，行数为基因数
+filled_h <- data.frame(matrix(0, nrow = length(union_of_rownames), ncol = ncol(h)))
+filled_ma <- data.frame(matrix(0, nrow = length(union_of_rownames), ncol = ncol(ma)))
+# filled_h <- data.frame(matrix(0, nrow = length(nrowH), ncol = ncol(h)))
+# filled_ma <- data.frame(matrix(0, nrow = length(nrowM), ncol = ncol(ma)))
+
+
+
+# 设置行名为 union_of_rownames
+row.names(filled_h) <- union_of_rownames
+row.names(filled_ma) <- union_of_rownames
+# row.names(filled_h) <- nrowH
+# row.names(filled_ma) <- nrowM
+
+# 填充第一个数据集（human）的值
+for (i in 1:length(union_of_rownames)) {
+  gene <- union_of_rownames[i]
+  if (gene %in% rownames(h)) {
+    filled_h[i, ] <- h[gene, ]
+  }
+}
+
+# 填充第二个数据集（macaca）的值
+for (i in 1:length(union_of_rownames)) {
+  gene <- union_of_rownames[i]
+  if (gene %in% rownames(ma)) {
+    filled_ma[i, ] <- ma[gene, ]
+  }
+}
+
+
+# #替换为同源基因（human命名）
+# one2one<-TF[, c("OvelapHumanTF", "macaca")]
+# #取count矩阵与one2one物种相同的基因
+# data2 <- filled_ma[row.names(filled_ma) %in% one2one[,"OvelapHumanTF"],]
+# #提取one2one
+# datam2 <- one2one[one2one[,"human_gene"] %in% rownames(data2),] 
+# ####去重
+# datam <- subset(datam2, !duplicated(datam2$OvelapHumanTF))
+# dim(datam)
+# ####
+# data2 <- as.data.frame(data2)
+# dim(data2)
+# data2[,ncol(data2)+1] =rownames(data2)
+# ###
+# colnames(data2)[ncol(data2)] ="OvelapHumanTF"
+# data1=merge(datam, data2, by='OvelapHumanTF', all=F)
+# rownames(data1) = data1$OvelapHumanTF
+# #
+# filled_ma=data1[,3:ncol(data1)]
+
+
+
+GetLogUMI <- function(rds_object, gene_list) {
+  matrix = rds_object[gene_list, ]
+  matrix = t(matrix)
+  x = c()
+  for (i in gene_list){
+    cell_num = sum(matrix[, i] > -1)#获得数量，用length函数也行
+    gene_sum = sum(matrix[, i])
+    value = log(gene_sum/cell_num + 1)
+    x = append(x, value)
+  }
+  return(x)
+}
+
+
+###human_turtle
+#var_featrue = intersect(rownames(h), rownames(ma))
+
+y = GetLogUMI(filled_h, rownames(filled_h))
+x = GetLogUMI(filled_ma, rownames(filled_ma))
+
+#y = GetLogUMI(h, var_featrue)
+#x = GetLogUMI(t, var_featrue)
+## 标记gene特征
+data_plot = data.frame(rownames(filled_ma), x, y)
+#data_plot = data.frame(var_featrue, x, y)
+
+colnames(data_plot) = c("gene", "x", "y")
+data_plot[is.na(data_plot)] = 0
+
+max(data_plot$x)
+max(data_plot$y)
+
+#write.csv(data_plot,'human_vs_macaca_Scatter_plot.csv')
+
+# 去除x和y中都小于2.5的行
+library(dplyr)
+filtered_data_plot <- data_plot[data_plot$x >=1.5 & data_plot$y >= 1.5, ]
+
+correlation_matrix <- cor.test(filtered_data_plot$x, filtered_data_plot$y,method = "spearman")
+r <- correlation_matrix$estimate
+r
+#0.7374187 
+#0.739411
+#0.7226388
+#0.536791 
+p <- ggplot(data = filtered_data_plot,aes(x = x, y = y)) +
+  geom_point(aes(colour = lable, size = as.numeric(size)),alpha=0.9,size=0.8, color="grey") +
+  scale_x_continuous("Macaca") +
+  scale_y_continuous("Human")+
+  theme_bw()+
+  theme(
+    legend.background=element_blank(), legend.key=element_blank(),
+    legend.title = element_blank(),
+    panel.grid.major = element_blank(),panel.grid.minor = element_blank()
+  )+coord_cartesian(xlim = c(0, 10), ylim = c(0,10), expand = F)+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
+  labs(title = "R=0.05857657")
+p
+
+
+marked.gene<-c('TAC3',
+               'IGF2',
+               'PAPPA',
+               'AOC1',
+               'TIMP3',
+               'ADM','WFDC2',
+               'IGFBP1',
+               'SERPINE2',
+               'NOTUM',
+               'CX3CL1',
+               'CCNE1',
+               'NOG',
+               'MFAP2')
+
+filtered_data_plot %>% mutate(size=ifelse(gene %in% marked.gene, "1", "0.8")) -> filtered_data_plot 
+## 定义点大小
+filtered_data_plot %>% mutate(lable=ifelse(gene %in% marked.gene, "mark", "normal")) -> filtered_data_plot 
+## 定义基因是否为需要标注的点
+filtered_data_plot %>% mutate(col=ifelse(gene %in% marked.gene, "red", "black")) -> filtered_data_plot 
+#####
+data_plot2=filtered_data_plot[which(filtered_data_plot$col == "red"), ]              
+               
+p <- ggplot(data = filtered_data_plot, aes(x = x, y = y)) +
+  geom_point(aes(colour = label, size = as.numeric(size)), alpha = 0.9, size = 0.8, color = "grey") +
+  scale_x_continuous("macaca") +
+  scale_y_continuous("human") +
+  theme_bw() +
+  theme(
+    legend.background = element_blank(), legend.key = element_blank(),
+    legend.title = element_blank(),
+    panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+  ) +
+  ggrepel::geom_text_repel(
+    aes(label = gene),
+    data = subset(filtered_data_plot, label == "mark")
+  ) +
+  coord_cartesian(xlim = c(0, 11), ylim = c(0, 11), expand = FALSE) +
+  geom_point(data = data_plot2, mapping = aes(x, y), size = 1.5, color = "red") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "black") +
+  labs(title = "R=0.")
+p
+
+
+
+
+
+
+
+
+
+
+
+
+
